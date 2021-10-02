@@ -473,8 +473,8 @@ class DydxRestApi(RestClient):
             frozen=balance-available,
             gateway_name=self.gateway_name
         )
-        if account.balance:
-            self.gateway.on_account(account)
+
+        self.gateway.on_account(account)
 
         for keys in d["openPositions"]:
             position: PositionData = PositionData(
@@ -663,7 +663,7 @@ class DydxWebsocketApi(WebsocketClient):
                 symbol=order_data["market"],
                 exchange=Exchange.DYDX,
                 orderid=order_data["clientId"],
-                type=ORDERTYPE_DYDX2VT(order_data["type"]),
+                type=ORDERTYPE_DYDX2VT[order_data["type"]],
                 direction=DIRECTION_DYDX2VT[order_data["side"]],
                 offset=Offset.NONE,
                 price=float(order_data["price"]),
@@ -684,6 +684,10 @@ class DydxWebsocketApi(WebsocketClient):
             self.gateway.write_log("账户资金查询成功")
 
         else:
+            fills = packet["contents"].get("fills", None)
+            if not fills:
+                return
+
             for fill_data in packet["contents"]["fills"]:
                 orderid: str = self.gateway.sys_local_map[fill_data["orderId"]]
 
