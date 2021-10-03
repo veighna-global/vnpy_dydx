@@ -99,8 +99,9 @@ TIMEDELTA_MAP: Dict[Interval, timedelta] = {
 # 合约数据全局缓存字典
 symbol_contract_map: Dict[str, ContractData] = {}
 
-# 鉴权类型
+
 class Security(Enum):
+    """鉴权类型"""
     PUBLIC: int = 0
     PRIVATE: int = 1
 
@@ -234,7 +235,7 @@ class DydxRestApi(RestClient):
             signature: str = sign(
                 request_path=request.path,
                 method=request.method,
-                iso_timestamp= now_iso_string,
+                iso_timestamp=now_iso_string,
                 data=remove_nones(request.data),
             )
             request.data = json.dumps(remove_nones(request.data))
@@ -325,16 +326,16 @@ class DydxRestApi(RestClient):
         expiration_epoch_seconds: int = int(time.time() + 86400)
 
         hash_namber: int = generate_hash_number(
-                server=self.server,
-                position_id=self.gateway.posid,
-                client_id=orderid,
-                market=req.symbol,
-                side=DIRECTION_VT2DYDX[req.direction],
-                human_size=str(req.volume),
-                human_price=str(req.price),
-                limit_fee=str(self.limitFee),
-                expiration_epoch_seconds=expiration_epoch_seconds
-            )
+            server=self.server,
+            position_id=self.gateway.posid,
+            client_id=orderid,
+            market=req.symbol,
+            side=DIRECTION_VT2DYDX[req.direction],
+            human_size=str(req.volume),
+            human_price=str(req.price),
+            limit_fee=str(self.limitFee),
+            expiration_epoch_seconds=expiration_epoch_seconds
+        )
 
         signature: str = order_to_sign(hash_namber, api_key_credentials_map["stark_private_key"])
 
@@ -470,7 +471,7 @@ class DydxRestApi(RestClient):
         account: AccountData = AccountData(
             accountid=d["id"],
             balance=balance,
-            frozen=balance-available,
+            frozen=balance - available,
             gateway_name=self.gateway_name
         )
 
@@ -555,7 +556,7 @@ class DydxWebsocketApi(WebsocketClient):
             self.init(WEBSOCKET_HOST, proxy_host, proxy_port)
         else:
             self.init(TESTNET_WEBSOCKET_HOST, proxy_host, proxy_port)
-    
+
         self.start()
 
     def on_connected(self) -> None:
@@ -597,7 +598,7 @@ class DydxWebsocketApi(WebsocketClient):
             end=None,
             interval=Interval.DAILY
         )
-        
+
         history: List[BarData] = self.gateway.query_history(history_req)
 
         orderbook.open_price = history[0].open_price
@@ -618,7 +619,7 @@ class DydxWebsocketApi(WebsocketClient):
         signature: str = sign(
             request_path="/ws/accounts",
             method="GET",
-            iso_timestamp= now_iso_string,
+            iso_timestamp=now_iso_string,
             data={},
         )
         req: dict = {
@@ -627,7 +628,7 @@ class DydxWebsocketApi(WebsocketClient):
             "accountNumber": self.accountNumber,
             "apiKey": api_key_credentials_map["key"],
             "signature": signature,
-            "timestamp":  now_iso_string,
+            "timestamp": now_iso_string,
             "passphrase": api_key_credentials_map["passphrase"]
         }
         self.send_packet(req)
@@ -649,7 +650,7 @@ class DydxWebsocketApi(WebsocketClient):
                 self.on_message(packet)
 
     def on_orderbook(self, packet: dict) -> None:
-        """订单簿更新推送"""       
+        """订单簿更新推送"""
         orderbook = self.orderbooks[packet["id"]]
         orderbook.on_message(packet)
 
@@ -730,7 +731,7 @@ class OrderBook():
         self.low_price: float = 0.0
         self.last_price: float = 0.0
         self.date: datetime.date = None
-        
+
     def on_message(self, d: dict) -> None:
         """Websocket订单簿更新推送"""
         type: str = d["type"]
@@ -768,7 +769,7 @@ class OrderBook():
                 start=None,
                 end=None,
                 interval=Interval.DAILY
-                )
+            )
             history: list[BarData] = self.gateway.query_history(req)
             self.open_price = history[0].open_price
 
@@ -776,14 +777,14 @@ class OrderBook():
         tick.localtime = datetime.now()
 
         self.gateway.on_tick(copy(tick))
-        
+
     def on_update(self, d: dict, dt) -> None:
         """盘口更新推送"""
         offset: int = int(d["offset"])
         if offset < self.offset:
             return
         self.offset = offset
-        
+
         for price, ask_volume in d["asks"]:
             price: float = float(price)
             ask_volume: float = float(ask_volume)
@@ -824,7 +825,7 @@ class OrderBook():
             volume = bids[n]["size"]
 
             self.bids[float(price)] = float(volume)
- 
+
         self.generate_tick(dt)
 
     def generate_tick(self, dt: datetime) -> None:
@@ -860,31 +861,34 @@ def generate_datetime(dt: str) -> datetime:
     dt: datetime = UTC_TZ.localize(dt)
     return dt
 
-def generate_now_iso():
+
+def generate_now_iso() -> str:
     """生成ISO时间"""
     return datetime.utcnow().strftime(
         '%Y-%m-%dT%H:%M:%S.%f',
     )[:-3] + 'Z'
 
-def epoch_seconds_to_iso(epoch):
+
+def epoch_seconds_to_iso(epoch) -> str:
     """时间格式转换"""
     return datetime.utcfromtimestamp(epoch).strftime(
         '%Y-%m-%dT%H:%M:%S.%f',
     )[:-3] + 'Z'
+
 
 def sign(
     request_path,
     method,
     iso_timestamp,
     data,
-):
+) -> str:
     """生成签名"""
-    message_string = (
-        iso_timestamp +
-        method +
-        request_path +
+    message_string = "".join([
+        iso_timestamp,
+        method,
+        request_path,
         (json_stringify(data) if data else '')
-    )
+    ])
     hashed = hmac.new(
         base64.urlsafe_b64decode(
             (api_key_credentials_map["secret"]).encode('utf-8'),
@@ -895,9 +899,9 @@ def sign(
     return base64.urlsafe_b64encode(hashed.digest()).decode()
 
 
-def json_stringify(data):
+def json_stringify(data) -> str:
     return json.dumps(data, separators=(',', ':'))
 
-def remove_nones(original):
-    return {k: v for k, v in original.items() if v is not None}
 
+def remove_nones(original) -> dict:
+    return {k: v for k, v in original.items() if v is not None}
