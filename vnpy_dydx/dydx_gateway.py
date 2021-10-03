@@ -236,9 +236,9 @@ class DydxRestApi(RestClient):
                 request_path=request.path,
                 method=request.method,
                 iso_timestamp=now_iso_string,
-                data=remove_nones(request.data),
+                data=request.data
             )
-            request.data = json.dumps(remove_nones(request.data))
+            request.data = json.dumps(request.data)
 
         headers = {
             "DYDX-SIGNATURE": signature,
@@ -750,8 +750,6 @@ class OrderBook():
         for n in range(len(d)):
             price: float = float(d[n]["price"])
             price_list.append(price)
-#            if generate_datetime(d[n]["createdAt"]) != self.date:
-#                self.open_price = price
 
         tick: TickData = self.tick
         tick.high_price = max(self.high_price, max(price_list))
@@ -855,9 +853,9 @@ class OrderBook():
         self.gateway.on_tick(copy(tick))
 
 
-def generate_datetime(dt: str) -> datetime:
+def generate_datetime(timestamp: str) -> datetime:
     """生成时间"""
-    dt: datetime = datetime.strptime(dt, '%Y-%m-%dT%H:%M:%S.%fZ')
+    dt: datetime = datetime.strptime(timestamp, '%Y-%m-%dT%H:%M:%S.%fZ')
     dt: datetime = UTC_TZ.localize(dt)
     return dt
 
@@ -869,7 +867,7 @@ def generate_now_iso() -> str:
     )[:-3] + 'Z'
 
 
-def epoch_seconds_to_iso(epoch) -> str:
+def epoch_seconds_to_iso(epoch: float) -> str:
     """时间格式转换"""
     return datetime.utcfromtimestamp(epoch).strftime(
         '%Y-%m-%dT%H:%M:%S.%f',
@@ -877,18 +875,23 @@ def epoch_seconds_to_iso(epoch) -> str:
 
 
 def sign(
-    request_path,
-    method,
-    iso_timestamp,
-    data,
+    request_path: str,
+    method: str,
+    iso_timestamp: str,
+    data: dict,
 ) -> str:
     """生成签名"""
+    body: str = ""
+    if data:
+        body = json.dumps(data, separators=(',', ':'))
+
     message_string = "".join([
         iso_timestamp,
         method,
         request_path,
-        (json_stringify(data) if data else '')
+        body
     ])
+
     hashed = hmac.new(
         base64.urlsafe_b64decode(
             (api_key_credentials_map["secret"]).encode('utf-8'),
@@ -897,11 +900,3 @@ def sign(
         digestmod=hashlib.sha256,
     )
     return base64.urlsafe_b64encode(hashed.digest()).decode()
-
-
-def json_stringify(data) -> str:
-    return json.dumps(data, separators=(',', ':'))
-
-
-def remove_nones(original) -> dict:
-    return {k: v for k, v in original.items() if v is not None}
