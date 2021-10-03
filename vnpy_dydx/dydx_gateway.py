@@ -381,7 +381,7 @@ class DydxRestApi(RestClient):
 
         self.add_request(
             method="DELETE",
-            path=f"v3/orders/{order_no}",
+            path=f"/v3/orders/{order_no}",
             callback=self.on_cancel_order,
             data=data,
             on_failed=self.on_cancel_failed,
