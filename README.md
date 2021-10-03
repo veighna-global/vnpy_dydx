@@ -5,7 +5,7 @@
 </p>
 
 <p align="center">
-    <img src ="https://img.shields.io/badge/version-2021.8.15-blueviolet.svg"/>
+    <img src ="https://img.shields.io/badge/version-2021.10.3-blueviolet.svg"/>
     <img src ="https://img.shields.io/badge/platform-windows|linux|macos-yellow.svg"/>
     <img src ="https://img.shields.io/badge/python-3.7-blue.svg" />
     <img src ="https://img.shields.io/github/license/vnpy/vnpy.svg?color=orange"/>
@@ -13,13 +13,13 @@
 
 ## 说明
 
-基于dYdX交易所的API开发，支持账户下的数字货币交易。
+基于币安交易所的API开发，支持账户下的永续合约交易。
 
 请在dYdX网站完成账户的相应设置后再使用。
 
 ## 安装
 
-安装需要基于2.2.0版本以上的[VN Studio](https://www.vnpy.com)。
+安装需要基于2.6.0版本以上的[VN Studio](https://www.vnpy.com)。
 
 直接使用pip命令：
 
